@@ -6,4 +6,4 @@ It may take more than 10 minutes to complete, so please be patient.
 Once it finishes, four .csv files will be generated.
 Then, run optimizerTask2.py to produce the final results.
 
-## Optimization in copiable format is in folder "Optimization Model in Word"
+## Optimization model in copiable format is in folder "Optimization Model in Word"
