@@ -137,7 +137,8 @@ class DataLoader:
         df_fac["existing_capacity_0_12"] = (
             df_fac[["total_capacity"]]
         )
-        df_fac["existing_capacity_0_5"] = df_fac[["infant_capacity", "toddler_capacity"]].sum(axis=1)
+        df_fac["existing_capacity_0_5"] = df_fac[["infant_capacity", "toddler_capacity","preschool_capacity"]].sum(axis=1)
+        + (5/12) * df_fac["children_capacity"]
         # 新增：为每个设施创建初始容量字段
         # New: Create initial capacity fields for each facility
         df_fac["initial_capacity_0_12"] = df_fac["existing_capacity_0_12"]
