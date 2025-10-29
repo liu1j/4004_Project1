@@ -25,11 +25,11 @@ class DataLoader:
                                        # Store positions too close to existing facilities
         self.facility_zip_map = None   # 新增：设施与zip code的映射
 
-    def load_and_process(self, output_file="processed_data.csv", 
-                         distance_file="location_distances.csv",
-                         facility_locations_file="existing_facilities_locations.csv",
-                         too_close_file="too_close_positions.csv",
-                         facility_data_file="facility_data.csv"):
+    def load_and_process(self, output_file="\Data\Raw Data\processed_data.csv", 
+                         distance_file="\Data\Raw Data\location_distances.csv",
+                         facility_locations_file="\Data\Raw Data\existing_facilities_locations.csv",
+                         too_close_file="\Data\Raw Data\too_close_positions.csv",
+                         facility_data_file="\Data\Raw Data\facility_data.csv"):
         """
         加载并处理所有数据，保存到CSV文件
         Load and process all data, save to CSV files
@@ -164,9 +164,9 @@ class DataLoader:
         emp_by_zip = df_emp.rename(columns={"zipcode": "zip_code"})
         df_zip = (
             cap_by_zip
-            .merge(pop_by_zip, on="zip_code", how="outer")
-            .merge(inc_by_zip, on="zip_code", how="outer")
-            .merge(emp_by_zip, on="zip_code", how="outer")
+            .merge(pop_by_zip, on="zip_code", how="left")
+            .merge(inc_by_zip, on="zip_code", how="left")
+            .merge(emp_by_zip, on="zip_code", how="left")
         )
         return df_zip
 
