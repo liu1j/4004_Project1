@@ -1,0 +1,15 @@
+Optimal solution found (tolerance 5.00e-02)
+Best objective 4.039231971085e+08, best bound 3.983726592080e+08, gap 1.3742%
+Expansion details for existing facilities saved to expansion_results.csv
+New facility information saved to new_facility_results.csv
+
+Key Statistics:
+Total expanded capacity: 33,198 slots
+Number of new facilities: 3,079
+  0%-10%: 14245 facilities
+  10%-15%: 528 facilities
+  15%-20%: 43 facilities
+
+Key Model Information:
+Number of ZIP codes: 1066
+Number of facilities: 15604
