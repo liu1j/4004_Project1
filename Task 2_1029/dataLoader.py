@@ -2,10 +2,6 @@ import pandas as pd
 import numpy as np
 import math
 
-"""Process-oriented implementation for loading and preprocessing data,
-saving results to CSV files
-"""
-
 def load_and_process(
     data_dir="",
     output_file="../Data/Result Data/processed_data.csv",
