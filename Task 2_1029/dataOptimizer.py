@@ -243,45 +243,61 @@ def solve_model(model, output_flag=1, mip_gap=0.05, time_limit=3600):
 # ============================================
 
 def extract_results(model, data, facility_data, zips, facilities, potential_locations, x, delta, y):
-    """Extract results into a DataFrame."""
-    results = []
+    """Extract results into separate facility-level and ZIP-level DataFrames."""
+    zip_results = []
+    expanded_facilities = []
+    new_facilities = []
+
     for z in zips:
         row = data[data["zip_code"] == z].iloc[0]
         facilities_in_zip = facility_data[facility_data["zip_code"] == z]
         total_expand = 0.0
-        expand_details = []
 
+        # ---------- Existing facilities (expansions) ----------
         for _, facility in facilities_in_zip.iterrows():
             fid = facility["facility_id"]
             x_val = float(x[fid].X) if hasattr(x[fid], "X") else float(x[fid])
+            if x_val > 1e-6:  
+                seg = "N/A"
+                for k in range(len(SEGMENT_BOUNDS)):
+                    if (fid, k) in delta and hasattr(delta[fid, k], "X") and delta[fid, k].X > 0.5:
+                        seg = f"{int(SEGMENT_BOUNDS[k][0]*100)}%-{int(SEGMENT_BOUNDS[k][1]*100)}%"
+                        break
+                expanded_facilities.append({
+                    "zip_code": z,
+                    "facility_id": fid,
+                    "expand_amount": x_val,
+                    "expand_segment": seg,
+                    "initial_capacity": float(facility["initial_capacity_0_12"]),
+                    "final_capacity_est": float(facility["initial_capacity_0_12"]) + x_val
+                })
             total_expand += x_val
 
-            seg = "N/A"
-            for k in range(len(SEGMENT_BOUNDS)):
-                if (fid, k) in delta and hasattr(delta[fid, k], "X") and delta[fid, k].X > 0.5:
-                    seg = f"{int(SEGMENT_BOUNDS[k][0]*100)}%-{int(SEGMENT_BOUNDS[k][1]*100)}%"
-                    break
-            expand_details.append({
-                "facility_id": fid,
-                "expand": x_val,
-                "expand_segment": seg,
-                "initial_capacity": float(facility["initial_capacity_0_12"])
-            })
-
+        # ---------- New facilities ----------
         small = medium = large = 0
         if z in potential_locations and potential_locations[z]:
             for l in potential_locations[z]:
                 for t in FACILITY_TYPES:
                     if (z, l, t) in y and hasattr(y[z, l, t], "X") and y[z, l, t].X > 0.5:
+                        new_facilities.append({
+                            "zip_code": z,
+                            "location_id": l,
+                            "facility_type": t,
+                            "capacity_0_12": get_capacity(t),
+                            "capacity_0_5": get_05_capacity(t),
+                            "build_cost": get_build_cost(t),
+                            "equipment_cost": 100.0 * get_05_capacity(t)
+                        })
                         if t == "small": small += 1
                         elif t == "medium": medium += 1
                         else: large += 1
 
         total_new = small * get_capacity("small") + medium * get_capacity("medium") + large * get_capacity("large")
-        results.append({
+
+        # ---------- ZIP-level summary ----------
+        zip_results.append({
             "zip": z,
             "total_expand": total_expand,
-            "expand_details": expand_details,
             "small": small,
             "medium": medium,
             "large": large,
@@ -292,12 +308,19 @@ def extract_results(model, data, facility_data, zips, facilities, potential_loca
             "required_05": float(row.get("min_required_0_5", 0.0))
         })
 
-    return pd.DataFrame(results)
+    return (
+        pd.DataFrame(zip_results),
+        pd.DataFrame(expanded_facilities),
+        pd.DataFrame(new_facilities)
+    )
+
 
 
 # ============================================
 # Main execution
 # ============================================
+
+import os
 
 def main():
     print("\nStep 2: Solving optimization problem (procedural version)...")
@@ -321,11 +344,28 @@ def main():
     model = solve_model(model, output_flag=1, mip_gap=0.05, time_limit=3600)
 
     if model.SolCount > 0:
-        results = extract_results(model, data, facility_data, zips, facilities, potential_locations, x, delta, y)
-        print("\nOptimization results (top rows):")
-        print(results.head())
+        zip_df, expand_df, new_df = extract_results(model, data, facility_data, zips, facilities, potential_locations, x, delta, y)
+
+        output_dir = "../Result Data"
+        os.makedirs(output_dir, exist_ok=True)
+
+        zip_path = os.path.join(output_dir, "zip_level_summary.csv")
+        expand_path = os.path.join(output_dir, "expanded_facilities.csv")
+        new_path = os.path.join(output_dir, "new_facilities.csv")
+
+        zip_df.to_csv(zip_path, index=False)
+        expand_df.to_csv(expand_path, index=False)
+        new_df.to_csv(new_path, index=False)
+
+        print("\n Results saved:")
+        print(f"  ZIP summary → {zip_path}")
+        print(f"  Expanded facilities → {expand_path}")
+        print(f"  New facilities → {new_path}")
+
+        print("\nOptimization results (top ZIPs):")
+        print(zip_df.head())
     else:
-        print("No feasible solution found.")
+        print(" No feasible solution found.")
 
     print(f"\nNumber of ZIP codes: {len(zips)}")
     print(f"Number of facilities: {len(facilities)}")
